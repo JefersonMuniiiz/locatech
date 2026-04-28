@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: locatech
+      POSTGRES_PASSWORD: locatech123
+      POSTGRES_DB: locatech
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://locatech:locatech123@postgres:5432/locatech
+      JWT_SECRET: locatech-secret-key-change-in-production
+      JWT_EXPIRES_IN: 7d
+      PORT: 3001
+      NODE_ENV: production
+      FRONTEND_URL: http://localhost:5173
+      FINE_RATE_PER_DAY: 50
+    depends_on:
+      - postgres
+    command: sh -c "npx prisma migrate deploy && node src/server.js"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
