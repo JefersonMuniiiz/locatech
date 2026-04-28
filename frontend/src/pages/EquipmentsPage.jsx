@@ -35,7 +35,7 @@ export default function EquipmentsPage() {
   })
 
   const openCreate = () => { setEditing(null); setForm(EMPTY); setModal(true) }
-  const openEdit = (eq) => { setEditing(eq); setForm({ ...eq, dailyRate: eq.dailyRate }); setModal(true) }
+  const openEdit = (eq) => { setEditing(eq); setForm({ ...eq, dailyRate: eq.dailyRate, availableQuantity: eq.availableQuantity ?? 0 }); setModal(true) }
   const closeModal = () => { setModal(false); setEditing(null); setForm(EMPTY) }
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
