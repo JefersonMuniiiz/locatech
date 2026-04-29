@@ -216,3 +216,47 @@ export function openPrintWindow(html) {
   win.document.write(html)
   win.document.close()
 }
+
+export function generateReceiptHTML(rental, company) {
+  const payment = rental.payment
+  const fineAmount = Number(payment?.fineAmount) || 0
+  const totalAmount = Number(payment?.totalAmount) || 0
+  const today = new Date().toLocaleDateString('pt-BR')
+  const contractRef = rental.id.slice(-6).toUpperCase()
+  const PM = { CASH: 'Dinheiro', PIX: 'PIX', CREDIT_CARD: 'Cartão de Crédito', DEBIT_CARD: 'Cartão de Débito', BANK_TRANSFER: 'Transferência', BOLETO: 'Boleto' }
+
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><title>Recibo #${contractRef}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Times New Roman',serif;color:#1a1a1a;font-size:13px;line-height:1.8}@page{margin:20mm;size:A4}@media print{.no-print{display:none!important}}.page{max-width:800px;margin:0 auto;padding:30px}.print-btn{position:fixed;top:20px;right:20px;background:#1e40af;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}.header{text-align:center;margin-bottom:30px;border-bottom:2px solid #1a1a1a;padding-bottom:16px}.header h1{font-size:16px;font-weight:bold;text-transform:uppercase}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.field label{font-size:10px;color:#666;text-transform:uppercase}.field p{font-size:13px;font-weight:500}table{width:100%;border-collapse:collapse;margin:10px 0}th{background:#f1f5f9;padding:7px 10px;text-align:left;font-size:12px;border:1px solid #ccc}td{padding:7px 10px;font-size:12px;border:1px solid #ccc}.total-row td{font-weight:bold;background:#f8fafc}.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}.sig-line{border-top:1px solid #1a1a1a;padding-top:8px;margin-top:40px;text-align:center;font-size:12px;line-height:1.6}.footer{margin-top:30px;padding-top:12px;border-top:1px solid #ccc;text-align:center;font-size:10px;color:#888}.stamp{text-align:center;border:3px solid #16a34a;color:#16a34a;font-size:24px;font-weight:bold;padding:10px 20px;display:inline-block;transform:rotate(-15deg);margin:20px auto;letter-spacing:4px}</style>
+  </head><body>
+  <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  <div class="page">
+    <div class="header"><h1>Recibo de Pagamento</h1><p>${company?.name || 'Locadora'} · CNPJ: ${company?.document || '—'}</p><p>Ref. Contrato Nº ${contractRef} · Emitido em ${today}</p></div>
+    ${payment?.status === 'PAID' ? '<div style="text-align:center;margin:10px 0"><span class="stamp">PAGO</span></div>' : ''}
+    <div style="margin-bottom:20px">
+      <div style="font-weight:bold;font-size:13px;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #ccc;padding-bottom:4px">Dados do Pagamento</div>
+      <div class="grid-2">
+        <div class="field"><label>Cliente</label><p>${rental.client?.name}</p></div>
+        <div class="field"><label>CPF / CNPJ</label><p>${rental.client?.document}</p></div>
+        <div class="field"><label>Período</label><p>${new Date(rental.startDate).toLocaleDateString('pt-BR')} → ${new Date(rental.endDate).toLocaleDateString('pt-BR')}</p></div>
+        <div class="field"><label>Data do Pagamento</label><p>${payment?.paidAt ? new Date(payment.paidAt).toLocaleDateString('pt-BR') : '—'}</p></div>
+        <div class="field"><label>Forma de Pagamento</label><p>${payment?.method ? (PM[payment.method] || payment.method) : '—'}</p></div>
+        <div class="field"><label>Status</label><p>${payment?.status === 'PAID' ? '✅ Pago' : '⏳ Pendente'}</p></div>
+      </div>
+    </div>
+    <div style="margin-bottom:20px">
+      <div style="font-weight:bold;font-size:13px;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #ccc;padding-bottom:4px">Itens</div>
+      <table><thead><tr><th>Equipamento</th><th>Qtd</th><th>Diária</th><th>Dias</th><th>Total</th></tr></thead>
+      <tbody>
+        ${rental.items?.map(item => `<tr><td>${item.equipment?.name||'—'}</td><td>${item.quantity}</td><td>${Number(item.dailyRate).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td><td>${rental.totalDays}</td><td>${Number(item.totalAmount).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>`).join('')}
+        ${fineAmount > 0 ? `<tr><td colspan="4" style="color:#dc2626">Multa por atraso</td><td style="color:#dc2626">${fineAmount.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>` : ''}
+        <tr class="total-row"><td colspan="4">TOTAL PAGO</td><td>${totalAmount.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>
+      </tbody></table>
+    </div>
+    <p style="text-align:center;margin-top:20px;font-size:13px">Declaro ter recebido o pagamento referente à locação dos equipamentos acima discriminados.</p>
+    <div class="sig-grid">
+      <div><div class="sig-line"><p><strong>${company?.name||'LOCADORA'}</strong></p><p>LOCADORA</p></div></div>
+      <div><div class="sig-line"><p><strong>${rental.client?.name}</strong></p><p>LOCATÁRIO</p></div></div>
+    </div>
+    <div class="footer">Documento gerado em ${new Date().toLocaleString('pt-BR')} · ${company?.name||'LocaTech'}</div>
+  </div></body></html>`
+}
