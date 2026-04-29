@@ -60,214 +60,152 @@ export function generateContractHTML(rental, company) {
   const fineAmount = Number(rental.fineAmount) || 0
   const totalAmount = Number(rental.totalAmount) || 0
   const grandTotal = totalAmount + fineAmount
+  const startDate = new Date(rental.startDate).toLocaleDateString('pt-BR')
+  const endDate = new Date(rental.endDate).toLocaleDateString('pt-BR')
+  const today = new Date().toLocaleDateString('pt-BR')
+  const contractRef = rental.id.slice(-6).toUpperCase()
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
-  <title>Contrato de Locação #${rental.id.slice(-6).toUpperCase()}</title>
-  <style>${BASE_STYLES}</style>
+  <title>Contrato #${contractRef}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Times New Roman', Times, serif; color: #1a1a1a; font-size: 13px; line-height: 1.8; }
+    @page { margin: 20mm; size: A4; }
+    @media print { .no-print { display: none !important; } }
+    .page { max-width: 800px; margin: 0 auto; padding: 30px; }
+    .print-btn { position: fixed; top: 20px; right: 20px; background: #1e40af; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1a1a1a; padding-bottom: 16px; }
+    .header h1 { font-size: 16px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+    .header p { font-size: 12px; color: #444; }
+    .contract-ref { text-align: right; font-size: 11px; color: #666; margin-bottom: 20px; }
+    .intro { text-align: justify; margin-bottom: 24px; line-height: 2; }
+    .clause { margin-bottom: 20px; }
+    .clause-title { font-weight: bold; font-size: 13px; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+    .clause p { text-align: justify; margin-bottom: 6px; padding-left: 8px; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    th { background: #f1f5f9; padding: 7px 10px; text-align: left; font-size: 12px; border: 1px solid #ccc; }
+    td { padding: 7px 10px; font-size: 12px; border: 1px solid #ccc; }
+    .total-row td { font-weight: bold; background: #f8fafc; }
+    .signatures-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; }
+    .sig-line { border-top: 1px solid #1a1a1a; padding-top: 8px; margin-top: 40px; text-align: center; font-size: 12px; line-height: 1.6; }
+    .date-line { text-align: center; margin-top: 30px; font-size: 13px; }
+    .footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #ccc; text-align: center; font-size: 10px; color: #888; }
+  </style>
 </head>
 <body>
 <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
 <div class="page">
 
   <div class="header">
-    <div class="logo">
-      <div class="logo-icon">LT</div>
-      <div class="logo-text">
-        <h1>${company?.name || 'LocaTech'}</h1>
-        <p>Locação de Equipamentos</p>
-      </div>
-    </div>
-    <div class="doc-info">
-      <h2>CONTRATO DE LOCAÇÃO</h2>
-      <p class="doc-number">Nº ${rental.id.slice(-6).toUpperCase()}</p>
-      <p>Emitido em: ${formatDate(new Date().toISOString())}</p>
-    </div>
+    <h1>Contrato de Locação de Equipamentos</h1>
+    <p>${company?.name || 'Locadora'} · CNPJ: ${company?.document || '—'}</p>
   </div>
 
-  <div class="section">
-    <div class="section-title">Dados do Locatário</div>
-    <div class="grid-3">
-      <div class="field"><label>Nome / Razão Social</label><p>${rental.client?.name}</p></div>
-      <div class="field"><label>CPF / CNPJ</label><p>${rental.client?.document}</p></div>
-      <div class="field"><label>Telefone</label><p>${rental.client?.phone}</p></div>
-      <div class="field"><label>E-mail</label><p>${rental.client?.email || '—'}</p></div>
-      <div class="field" style="grid-column: span 2"><label>Endereço</label><p>${rental.client?.address}, ${rental.client?.city} – ${rental.client?.state}</p></div>
-    </div>
+  <div class="contract-ref">Contrato Nº ${contractRef} · Emitido em ${today}</div>
+
+  <div class="intro">
+    Pelo presente instrumento particular, de um lado, <strong>${company?.name || 'LOCADORA'}</strong>,
+    pessoa jurídica inscrita no CNPJ nº <strong>${company?.document || '—'}</strong>,
+    com sede em <strong>${company?.address || '—'}</strong>,
+    doravante denominada <strong>LOCADORA</strong>, e, de outro lado,
+    o(a) Sr(a). <strong>${rental.client?.name}</strong>,
+    CPF/CNPJ nº <strong>${rental.client?.document}</strong>,
+    residente/sediado em <strong>${rental.client?.address}, ${rental.client?.city} – ${rental.client?.state}</strong>,
+    doravante denominado <strong>LOCATÁRIO</strong>, têm entre si justo e acordado o presente
+    contrato de locação de equipamentos, mediante as seguintes cláusulas e condições:
   </div>
 
-  <div class="section">
-    <div class="section-title">Dados da Locação</div>
-    <div class="grid-3">
-      <div class="field"><label>Data de Início</label><p>${formatDate(rental.startDate)}</p></div>
-      <div class="field"><label>Data de Devolução</label><p>${formatDate(rental.endDate)}</p></div>
-      <div class="field"><label>Total de Dias</label><p>${rental.totalDays} dias</p></div>
-      <div class="field" style="grid-column: span 3"><label>Endereço de Entrega</label><p>${rental.address}</p></div>
-      ${rental.notes ? `<div class="field" style="grid-column: span 3"><label>Observações</label><p>${rental.notes}</p></div>` : ''}
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Equipamentos Locados</div>
+  <div class="clause">
+    <div class="clause-title">1. Objeto do Contrato</div>
+    <p><strong>1.1.</strong> O presente contrato tem como objeto a locação do(s) seguinte(s) equipamento(s):</p>
     <table>
-      <thead>
-        <tr>
-          <th>Equipamento</th>
-          <th class="text-right">Qtd</th>
-          <th class="text-right">Diária Unit.</th>
-          <th class="text-right">Dias</th>
-          <th class="text-right">Subtotal</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Equipamento</th><th>Qtd</th><th>Diária Unit.</th><th>Dias</th><th>Subtotal</th></tr></thead>
       <tbody>
         ${rental.items?.map(item => `
           <tr>
             <td>${item.equipment?.name || '—'}</td>
-            <td class="text-right">${item.quantity}</td>
-            <td class="text-right">${formatCurrency(item.dailyRate)}</td>
-            <td class="text-right">${rental.totalDays}</td>
-            <td class="text-right">${formatCurrency(item.totalAmount)}</td>
-          </tr>
-        `).join('')}
+            <td>${item.quantity}</td>
+            <td>${Number(item.dailyRate).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td>${rental.totalDays}</td>
+            <td>${Number(item.totalAmount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+          </tr>`).join('')}
+        ${fineAmount > 0 ? `<tr><td colspan="4" style="color:#dc2626">Multa por atraso</td><td style="color:#dc2626">${fineAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>` : ''}
+        <tr class="total-row"><td colspan="4">TOTAL</td><td>${grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>
       </tbody>
     </table>
-    <div class="totals">
-      <table class="totals-table">
-        <tr><td>Subtotal</td><td>${formatCurrency(totalAmount)}</td></tr>
-        ${fineAmount > 0 ? `<tr class="fine-row"><td>Multa por atraso</td><td>${formatCurrency(fineAmount)}</td></tr>` : ''}
-        <tr class="total-final"><td>TOTAL</td><td>${formatCurrency(grandTotal)}</td></tr>
-      </table>
-    </div>
+    <p><strong>1.2.</strong> O LOCATÁRIO recebe o equipamento em plenas condições de funcionamento e se compromete a devolvê-lo no mesmo estado em que recebeu, salvo desgaste natural pelo uso adequado.</p>
   </div>
 
-  <div class="section">
-    <div class="section-title">Cláusulas e Condições</div>
-    <div class="terms">
-      <p><strong>1. OBJETO:</strong> O presente contrato tem por objeto a locação dos equipamentos descritos acima, pelo prazo estipulado.</p>
-      <p><strong>2. RESPONSABILIDADE:</strong> O LOCATÁRIO é responsável pela guarda, conservação e uso adequado dos equipamentos durante o período de locação.</p>
-      <p><strong>3. DANOS:</strong> Em caso de danos, perda ou furto dos equipamentos, o LOCATÁRIO arcará com o valor de reposição integral.</p>
-      <p><strong>4. DEVOLUÇÃO:</strong> Os equipamentos deverão ser devolvidos na data acordada, limpos e em perfeitas condições de uso.</p>
-      <p><strong>5. MULTA POR ATRASO:</strong> O atraso na devolução sujeitará o LOCATÁRIO ao pagamento de multa de R$ 50,00 por dia de atraso por contrato, além do valor proporcional da diária.</p>
-      <p><strong>6. PAGAMENTO:</strong> O pagamento deverá ser efetuado conforme acordado entre as partes, podendo ser à vista ou parcelado conforme negociação.</p>
-    </div>
+  <div class="clause">
+    <div class="clause-title">2. Prazo de Locação</div>
+    <p><strong>2.1.</strong> O prazo de locação será de <strong>${rental.totalDays} dias</strong>, iniciando-se em <strong>${startDate}</strong> e finalizando em <strong>${endDate}</strong>.</p>
+    <p><strong>2.2.</strong> Caso haja necessidade de prorrogação do prazo, o LOCATÁRIO deverá comunicar a LOCADORA com antecedência mínima de 72 horas.</p>
+    <p><strong>2.3.</strong> O não cumprimento do prazo de devolução acarretará cobrança de multa diária acrescida de 10% por dia de atraso, até a efetiva devolução dos equipamentos.</p>
   </div>
 
-  <div class="footer">
-    <div class="signatures">
-      <div>
-        <div class="signature-line">${company?.name || 'Locadora'}<br>LOCADOR(A)</div>
-      </div>
-      <div>
-        <div class="signature-line">${rental.client?.name}<br>LOCATÁRIO(A)</div>
-      </div>
-    </div>
-    <p style="text-align:center; margin-top: 20px; font-size: 10px; color: #94a3b8;">
-      Documento gerado em ${new Date().toLocaleString('pt-BR')} · LocaTech Sistema de Gestão
-    </p>
+  <div class="clause">
+    <div class="clause-title">3. Responsabilidade do Locatário</div>
+    <p><strong>3.1.</strong> O LOCATÁRIO assume total responsabilidade pelo equipamento durante o período de locação, incluindo qualquer dano, extravio, roubo ou furto.</p>
+    <p><strong>3.2.</strong> Em caso de danos causados por mau uso, negligência ou uso inadequado, o LOCATÁRIO se compromete a arcar com os custos de reparo ou reposição do equipamento.</p>
+    <p><strong>3.3.</strong> O equipamento não poderá ser transportado ou utilizado fora do local previamente acordado sem autorização expressa da LOCADORA.</p>
+    <p><strong>3.4.</strong> O equipamento deverá ser devolvido limpo. Caso contrário, será cobrada uma taxa de limpeza no valor de <strong>R$ 100,00</strong>.</p>
   </div>
 
-</div>
-</body>
-</html>`
-}
+  <div class="clause">
+    <div class="clause-title">4. Obrigações da Locadora</div>
+    <p><strong>4.1.</strong> A LOCADORA se compromete a fornecer o equipamento em perfeitas condições de uso.</p>
+    <p><strong>4.2.</strong> Caso o equipamento apresente defeito de fabricação durante o período de locação, a LOCADORA providenciará sua substituição, desde que constatado que o defeito não foi causado pelo LOCATÁRIO.</p>
+  </div>
 
-export function generateReceiptHTML(rental, company) {
-  const payment = rental.payment
-  const fineAmount = Number(payment?.fineAmount) || 0
-  const totalAmount = Number(payment?.totalAmount) || 0
+  <div class="clause">
+    <div class="clause-title">5. Pagamento</div>
+    <p><strong>5.1.</strong> O valor total da locação é de <strong>${grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>.</p>
+    <p><strong>5.2.</strong> O pagamento deverá ser efetuado conforme acordado entre as partes, podendo ser realizado via PIX, boleto bancário, dinheiro ou outro meio previamente combinado.</p>
+    <p><strong>5.3.</strong> O atraso no pagamento sujeitará o LOCATÁRIO ao pagamento de multa de 2% sobre o valor em aberto, acrescido de juros de 1% ao mês.</p>
+  </div>
 
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8"/>
-  <title>Recibo #${rental.id.slice(-6).toUpperCase()}</title>
-  <style>${BASE_STYLES}</style>
-</head>
-<body>
-<button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
-<div class="page">
+  <div class="clause">
+    <div class="clause-title">6. Endereço de Entrega</div>
+    <p><strong>6.1.</strong> Os equipamentos serão entregues no seguinte endereço: <strong>${rental.address}</strong>.</p>
+    <p><strong>6.2.</strong> Qualquer alteração no endereço de entrega deverá ser comunicada à LOCADORA com antecedência mínima de 24 horas.</p>
+  </div>
 
-  <div class="header">
-    <div class="logo">
-      <div class="logo-icon">LT</div>
-      <div class="logo-text">
-        <h1>${company?.name || 'LocaTech'}</h1>
-        <p>Locação de Equipamentos</p>
+  <div class="clause">
+    <div class="clause-title">7. Disposições Gerais</div>
+    <p><strong>7.1.</strong> O presente contrato constitui título executivo extrajudicial nos termos do artigo 784 do Código de Processo Civil.</p>
+    <p><strong>7.2.</strong> Fica eleito o foro da comarca de <strong>${company?.address?.split(',').pop()?.trim() || 'domicílio da LOCADORA'}</strong> para dirimir quaisquer questões oriundas do presente contrato.</p>
+    <p><strong>7.3.</strong> E, por estarem justos e acordados, assinam o presente contrato em duas vias de igual teor e forma.</p>
+    ${rental.notes ? `<p><strong>7.4.</strong> Observações: ${rental.notes}</p>` : ''}
+  </div>
+
+  <div class="date-line">${today}</div>
+
+  <div class="signatures-grid">
+    <div>
+      <div class="sig-line">
+        <p><strong>${company?.name || 'LOCADORA'}</strong></p>
+        <p>CNPJ: ${company?.document || '—'}</p>
+        <p>LOCADORA</p>
       </div>
     </div>
-    <div class="doc-info">
-      <h2>RECIBO DE PAGAMENTO</h2>
-      <p class="doc-number">Ref. Contrato Nº ${rental.id.slice(-6).toUpperCase()}</p>
-      <p>Emitido em: ${formatDate(new Date().toISOString())}</p>
+    <div>
+      <div class="sig-line">
+        <p><strong>${rental.client?.name}</strong></p>
+        <p>CPF/CNPJ: ${rental.client?.document}</p>
+        <p>LOCATÁRIO</p>
+      </div>
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Dados do Pagamento</div>
-    <div class="grid-3">
-      <div class="field"><label>Cliente</label><p>${rental.client?.name}</p></div>
-      <div class="field"><label>CPF / CNPJ</label><p>${rental.client?.document}</p></div>
-      <div class="field"><label>Status</label><p><span class="status-badge ${payment?.status === 'PAID' ? 'status-paid' : 'status-pending'}">${payment?.status === 'PAID' ? 'PAGO' : 'PENDENTE'}</span></p></div>
-      <div class="field"><label>Período</label><p>${formatDate(rental.startDate)} → ${formatDate(rental.endDate)}</p></div>
-      <div class="field"><label>Data do Pagamento</label><p>${payment?.paidAt ? formatDate(payment.paidAt) : '—'}</p></div>
-      <div class="field"><label>Forma de Pagamento</label><p>${payment?.method ? PAYMENT_METHODS[payment.method] : '—'}</p></div>
-    </div>
+  <div class="signatures-grid" style="margin-top: 20px;">
+    <div><div class="sig-line"><p>Testemunha 1</p><p>CPF: ___________________</p></div></div>
+    <div><div class="sig-line"><p>Testemunha 2</p><p>CPF: ___________________</p></div></div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Itens</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Equipamento</th>
-          <th class="text-right">Qtd</th>
-          <th class="text-right">Diária</th>
-          <th class="text-right">Dias</th>
-          <th class="text-right">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rental.items?.map(item => `
-          <tr>
-            <td>${item.equipment?.name || '—'}</td>
-            <td class="text-right">${item.quantity}</td>
-            <td class="text-right">${formatCurrency(item.dailyRate)}</td>
-            <td class="text-right">${rental.totalDays}</td>
-            <td class="text-right">${formatCurrency(item.totalAmount)}</td>
-          </tr>
-        `).join('')}
-        ${fineAmount > 0 ? `
-          <tr class="fine-row">
-            <td colspan="4">Multa por atraso na devolução</td>
-            <td class="text-right">${formatCurrency(fineAmount)}</td>
-          </tr>
-        ` : ''}
-      </tbody>
-    </table>
-    <div class="totals">
-      <table class="totals-table">
-        <tr><td>Valor da Locação</td><td>${formatCurrency(payment?.amount)}</td></tr>
-        ${fineAmount > 0 ? `<tr class="fine-row"><td>Multa por Atraso</td><td>${formatCurrency(fineAmount)}</td></tr>` : ''}
-        <tr class="total-final"><td>TOTAL PAGO</td><td>${formatCurrency(totalAmount)}</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <div class="footer">
-    <p style="font-size: 12px; color: #475569; text-align: center; margin-bottom: 32px;">
-      Declaro ter recebido o pagamento referente à locação dos equipamentos acima discriminados.
-    </p>
-    <div class="signatures">
-      <div><div class="signature-line">${company?.name || 'Locadora'}<br>LOCADOR(A)</div></div>
-      <div><div class="signature-line">${rental.client?.name}<br>LOCATÁRIO(A)</div></div>
-    </div>
-    <p style="text-align:center; margin-top: 20px; font-size: 10px; color: #94a3b8;">
-      Documento gerado em ${new Date().toLocaleString('pt-BR')} · LocaTech Sistema de Gestão
-    </p>
-  </div>
-
+  <div class="footer">Documento gerado em ${new Date().toLocaleString('pt-BR')} · ${company?.name || 'LocaTech'}</div>
 </div>
 </body>
 </html>`
