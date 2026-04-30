@@ -40,8 +40,8 @@ class RentalService {
   }
 
   async create(companyId, { clientId, startDate, endDate, items, address, notes }) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = new Date(startDate + 'T12:00:00')
+    const end = new Date(endDate + 'T12:00:00')
     const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     if (totalDays <= 0) throw { status: 400, message: 'Data de fim deve ser após a data de início' };
 
