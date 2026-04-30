@@ -8,13 +8,25 @@ export function AuthProvider({ children }) {
   const [company, setCompany] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const loadCompany = async () => {
+    const { data } = await api.get('/company')
+    setCompany(data)
+    return data
+  }
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
       api.get('/auth/me')
-        .then(({ data }) => { setUser(data.user); setCompany(data.company) })
-        .catch(() => { localStorage.removeItem('token'); delete api.defaults.headers.common['Authorization'] })
+        .then(async ({ data }) => {
+          setUser(data.user)
+          await loadCompany()
+        })
+        .catch(() => {
+          localStorage.removeItem('token')
+          delete api.defaults.headers.common['Authorization']
+        })
         .finally(() => setLoading(false))
     } else {
       setLoading(false)
@@ -26,7 +38,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', data.token)
     api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
     setUser(data.user)
-    setCompany(data.company)
+    await loadCompany()
   }
 
   const register = async (payload) => {
@@ -34,7 +46,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', data.token)
     api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
     setUser(data.user)
-    setCompany(data.company)
+    await loadCompany()
   }
 
   const logout = () => {

@@ -164,7 +164,6 @@ export function generateContractHTML(rental, company) {
     <div class="clause-title">5. Pagamento</div>
     <p><strong>5.1.</strong> O valor total da locação é de <strong>${grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>.</p>
     <p><strong>5.2.</strong> O pagamento deverá ser efetuado conforme acordado entre as partes, podendo ser realizado via PIX, boleto bancário, dinheiro ou outro meio previamente combinado.</p>
-    <p><strong>5.3.</strong> O atraso no pagamento sujeitará o LOCATÁRIO ao pagamento de multa de 2% sobre o valor em aberto, acrescido de juros de 1% ao mês.</p>
   </div>
 
   <div class="clause">

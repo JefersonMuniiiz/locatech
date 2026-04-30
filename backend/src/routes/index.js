@@ -14,6 +14,14 @@ const billingController = require('../controllers/billingController');
 router.post('/auth/register', (req, res, next) => authController.register(req, res, next));
 router.post('/auth/login', (req, res, next) => authController.login(req, res, next));
 router.get('/auth/me', authenticate, (req, res, next) => authController.me(req, res, next));
+router.get('/company', authenticate, async (req, res, next) => {
+  try {
+    const company = await require('../config/database').company.findUnique({
+      where: { id: req.companyId }
+    })
+    res.json(company)
+  } catch (err) { next(err) }
+})
 
 // Dashboard
 router.get('/dashboard', authenticate, (req, res, next) => rentalController.dashboard(req, res, next));
@@ -62,5 +70,12 @@ router.get('/notifications/status', authenticate, (req, res, next) => notificati
 router.post('/notifications/cobranca/:rentalId', authenticate, (req, res, next) => notificationController.sendCobranca(req, res, next))
 router.post('/notifications/atrasada/:rentalId', authenticate, (req, res, next) => notificationController.sendAtrasada(req, res, next))
 router.post('/notifications/lembretes', authenticate, (req, res, next) => notificationController.sendLembretes(req, res, next))
+router.get('/company', authenticate, async (req, res, next) => {
+  try {
+    const prisma = require('../config/database')
+    const company = await prisma.company.findUnique({ where: { id: req.companyId } })
+    res.json(company)
+  } catch (err) { next(err) }
+})
 
 module.exports = router
