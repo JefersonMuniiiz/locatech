@@ -135,7 +135,8 @@ export default function NewRentalPage() {
                   <input className="input" type="number" min="1"
                     max={eq ? eq.availableQuantity : undefined}
                     value={item.quantity}
-                    onChange={e => setItem(i, 'quantity', parseInt(e.target.value) || 1)} />
+                    onChange={e => setItem(i, 'quantity', parseInt(e.target.value) || 1)}
+                    onFocus={e => e.target.select()} />
                 </div>
                 <div className="col-span-3 text-sm">
                   <label className="label">Subtotal</label>
@@ -184,8 +185,9 @@ export default function NewRentalPage() {
               min="0"
               max="100"
               step="0.5"
-              value={discount}
+              value={discount || ''}
               onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
+              onFocus={e => e.target.select()}
               className="w-24 px-3 py-1.5 rounded-lg bg-slate-600 text-white text-sm border border-slate-500 focus:outline-none focus:border-blue-400"
             />
             {discount > 0 && (
