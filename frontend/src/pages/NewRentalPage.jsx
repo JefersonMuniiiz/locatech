@@ -3,14 +3,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Plus, Trash2, Loader2, Calculator } from 'lucide-react'
-import { formatCurrency, EQUIPMENT_TYPES } from '../utils'
+import { ArrowLeft, Plus, Trash2, Loader2, Calculator, Tag } from 'lucide-react'
+import { formatCurrency } from '../utils'
 
 export default function NewRentalPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [form, setForm] = useState({ clientId: '', startDate: '', endDate: '', address: '', notes: '' })
   const [items, setItems] = useState([])
+  const [discount, setDiscount] = useState(0)
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
   const { data: clients } = useQuery({ queryKey: ['clients'], queryFn: () => api.get('/clients').then(r => r.data) })
@@ -22,18 +23,18 @@ export default function NewRentalPage() {
     return Math.max(0, Math.ceil(diff / 86400000))
   })()
 
-  const totalAmount = items.reduce((acc, item) => {
+  const subtotal = items.reduce((acc, item) => {
     const eq = equipments?.find(e => e.id === item.equipmentId)
     return acc + (eq ? parseFloat(eq.dailyRate) * item.quantity * totalDays : 0)
   }, 0)
+
+  const discountAmount = (subtotal * discount) / 100
+  const totalAmount = subtotal - discountAmount
 
   const addItem = () => setItems(p => [...p, { equipmentId: '', quantity: 1 }])
   const removeItem = (i) => setItems(p => p.filter((_, idx) => idx !== i))
   const setItem = (i, k, v) => setItems(p => p.map((it, idx) => idx === i ? { ...it, [k]: v } : it))
 
-  const selectedClient = clients?.find(c => c.id === form.clientId)
-
-  // Auto-fill address when client is selected
   const handleClientChange = (clientId) => {
     set('clientId', clientId)
     const client = clients?.find(c => c.id === clientId)
@@ -57,7 +58,7 @@ export default function NewRentalPage() {
     if (items.length === 0) return toast.error('Adicione ao menos um equipamento')
     if (items.some(i => !i.equipmentId)) return toast.error('Selecione todos os equipamentos')
     if (totalDays === 0) return toast.error('Datas inválidas')
-    create.mutate({ ...form, items })
+    create.mutate({ ...form, items, discount })
   }
 
   return (
@@ -70,7 +71,7 @@ export default function NewRentalPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Client & Dates */}
+        {/* Dados Gerais */}
         <div className="card p-5 space-y-4">
           <h2 className="font-semibold text-slate-800">Dados Gerais</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -100,7 +101,7 @@ export default function NewRentalPage() {
           </div>
         </div>
 
-        {/* Equipment Items */}
+        {/* Equipamentos */}
         <div className="card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-slate-800">Equipamentos</h2>
@@ -152,12 +153,13 @@ export default function NewRentalPage() {
           })}
         </div>
 
-        {/* Summary */}
+        {/* Resumo */}
         <div className="card p-5 bg-slate-800 text-white">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-4">
             <Calculator size={18} className="text-blue-400" />
             <h2 className="font-semibold">Resumo</h2>
           </div>
+
           <div className="grid grid-cols-3 gap-4 text-sm mb-4">
             <div>
               <p className="text-slate-400">Período</p>
@@ -168,10 +170,38 @@ export default function NewRentalPage() {
               <p className="font-bold text-lg">{items.length}</p>
             </div>
             <div>
-              <p className="text-slate-400">Total Estimado</p>
-              <p className="font-bold text-lg text-blue-400">{formatCurrency(totalAmount)}</p>
+              <p className="text-slate-400">Subtotal</p>
+              <p className="font-bold text-lg">{formatCurrency(subtotal)}</p>
             </div>
           </div>
+
+          {/* Desconto */}
+          <div className="flex items-center gap-3 p-3 bg-slate-700 rounded-lg mb-4">
+            <Tag size={16} className="text-green-400 shrink-0" />
+            <label className="text-slate-300 text-sm whitespace-nowrap">Desconto (%):</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.5"
+              value={discount}
+              onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
+              className="w-24 px-3 py-1.5 rounded-lg bg-slate-600 text-white text-sm border border-slate-500 focus:outline-none focus:border-blue-400"
+            />
+            {discount > 0 && (
+              <div className="flex-1 text-right">
+                <p className="text-green-400 text-sm font-medium">- {formatCurrency(discountAmount)}</p>
+                <p className="text-slate-400 text-xs">{discount}% de desconto</p>
+              </div>
+            )}
+          </div>
+
+          {/* Total final */}
+          <div className="flex items-center justify-between p-3 bg-blue-600 rounded-lg mb-4">
+            <span className="font-semibold">Total Final</span>
+            <span className="font-bold text-xl">{formatCurrency(totalAmount)}</span>
+          </div>
+
           <button type="submit" className="btn-primary w-full justify-center py-3 bg-blue-500 hover:bg-blue-400" disabled={create.isPending}>
             {create.isPending ? <Loader2 size={18} className="animate-spin" /> : 'Confirmar Locação'}
           </button>

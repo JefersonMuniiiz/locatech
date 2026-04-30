@@ -7,7 +7,6 @@ const FINE_RATE_PER_DAY = parseFloat(process.env.FINE_RATE_PER_DAY || 50);
 class RentalService {
   async findAll(companyId, { status, clientId, startDate, endDate } = {}) {
     await this._updateDelayedRentals(companyId);
-
     return prisma.rental.findMany({
       where: {
         companyId,
@@ -39,17 +38,15 @@ class RentalService {
     return rental;
   }
 
-  async create(companyId, { clientId, startDate, endDate, items, address, notes }) {
+  async create(companyId, { clientId, startDate, endDate, items, address, notes, discount }) {
     const start = new Date(startDate + 'T12:00:00')
     const end = new Date(endDate + 'T12:00:00')
     const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     if (totalDays <= 0) throw { status: 400, message: 'Data de fim deve ser após a data de início' };
 
-    // Verify client
     const client = await prisma.client.findFirst({ where: { id: clientId, companyId } });
     if (!client) throw { status: 404, message: 'Cliente não encontrado' };
 
-    // Calculate totals and verify availability
     let totalAmount = 0;
     const processedItems = [];
 
@@ -61,10 +58,8 @@ class RentalService {
       if (equipment.availableQuantity < item.quantity) {
         throw { status: 400, message: `Quantidade insuficiente para ${equipment.name}. Disponível: ${equipment.availableQuantity}` };
       }
-
       const itemTotal = item.quantity * equipment.dailyRate * totalDays;
       totalAmount += itemTotal;
-
       processedItems.push({
         equipmentId: item.equipmentId,
         quantity: item.quantity,
@@ -73,8 +68,12 @@ class RentalService {
       });
     }
 
-    // Create rental in transaction
-    return prisma.$transaction(async (tx) => {
+    // Aplica desconto
+    const discountPercent = parseFloat(discount) || 0;
+    const discountAmount = (totalAmount * discountPercent) / 100;
+    const finalAmount = totalAmount - discountAmount;
+
+    const result = await prisma.$transaction(async (tx) => {
       const rental = await tx.rental.create({
         data: {
           clientId,
@@ -82,16 +81,18 @@ class RentalService {
           startDate: start,
           endDate: end,
           totalDays,
-          totalAmount,
+          totalAmount: finalAmount,
+          discountPercent,
+          discountAmount,
           status: 'ACTIVE',
           address,
           notes,
           items: { create: processedItems },
           payment: {
             create: {
-              amount: totalAmount,
+              amount: finalAmount,
               fineAmount: 0,
-              totalAmount,
+              totalAmount: finalAmount,
               status: 'PENDING',
             },
           },
@@ -99,7 +100,6 @@ class RentalService {
         include: { client: true, items: { include: { equipment: true } }, payment: true },
       });
 
-      // Update equipment availability
       for (const item of processedItems) {
         await equipmentService.updateAvailability(item.equipmentId, -item.quantity, tx);
       }
@@ -127,14 +127,9 @@ class RentalService {
     return prisma.$transaction(async (tx) => {
       const updated = await tx.rental.update({
         where: { id },
-        data: {
-          status: 'COMPLETED',
-          returnDate,
-          fineAmount,
-        },
+        data: { status: 'COMPLETED', returnDate, fineAmount },
       });
 
-      // Update payment if there's a fine
       if (fineAmount > 0 && rental.payment) {
         await tx.payment.update({
           where: { id: rental.payment.id },
@@ -146,7 +141,6 @@ class RentalService {
         });
       }
 
-      // Restore equipment availability
       for (const item of rental.items) {
         await equipmentService.updateAvailability(item.equipmentId, item.quantity, tx);
       }
@@ -158,7 +152,6 @@ class RentalService {
   async updatePayment(rentalId, companyId, { status, method, notes }) {
     const rental = await this.findById(rentalId, companyId);
     if (!rental.payment) throw { status: 404, message: 'Pagamento não encontrado' };
-
     return prisma.payment.update({
       where: { id: rental.payment.id },
       data: {
@@ -175,7 +168,6 @@ class RentalService {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-
     return prisma.rental.findMany({
       where: {
         companyId,
@@ -188,45 +180,34 @@ class RentalService {
 
   async getDashboardStats(companyId) {
     await this._updateDelayedRentals(companyId);
-
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    const [
-      totalEquipments,
-      rentedEquipments,
-      activeRentals,
-      delayedRentals,
-      monthRevenue,
-      recentRentals,
-    ] = await Promise.all([
-      prisma.equipment.count({ where: { companyId } }),
-      prisma.equipment.aggregate({
-        where: { companyId },
-        _sum: { availableQuantity: true, totalQuantity: true },
-      }),
-      prisma.rental.count({ where: { companyId, status: 'ACTIVE' } }),
-      prisma.rental.findMany({
-        where: { companyId, status: 'DELAYED' },
-        include: { client: true, payment: true },
-        take: 5,
-      }),
-      prisma.payment.aggregate({
-        where: {
-          rental: { companyId },
-          status: 'PAID',
-          paidAt: { gte: firstDay, lte: lastDay },
-        },
-        _sum: { totalAmount: true },
-      }),
-      prisma.rental.findMany({
-        where: { companyId },
-        include: { client: true, items: true, payment: true },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-      }),
-    ]);
+    const [totalEquipments, rentedEquipments, activeRentals, delayedRentals, monthRevenue, recentRentals] =
+      await Promise.all([
+        prisma.equipment.count({ where: { companyId } }),
+        prisma.equipment.aggregate({
+          where: { companyId },
+          _sum: { availableQuantity: true, totalQuantity: true },
+        }),
+        prisma.rental.count({ where: { companyId, status: 'ACTIVE' } }),
+        prisma.rental.findMany({
+          where: { companyId, status: 'DELAYED' },
+          include: { client: true, payment: true },
+          take: 5,
+        }),
+        prisma.payment.aggregate({
+          where: { rental: { companyId }, status: 'PAID', paidAt: { gte: firstDay, lte: lastDay } },
+          _sum: { totalAmount: true },
+        }),
+        prisma.rental.findMany({
+          where: { companyId },
+          include: { client: true, items: true, payment: true },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        }),
+      ]);
 
     const totalItems = rentedEquipments._sum.totalQuantity || 0;
     const availableItems = rentedEquipments._sum.availableQuantity || 0;
@@ -247,7 +228,6 @@ class RentalService {
     const end = new Date(endDate);
     const returned = new Date(returnDate);
     if (returned <= end) return 0;
-
     const daysLate = Math.ceil((returned - end) / (1000 * 60 * 60 * 24));
     return daysLate * FINE_RATE_PER_DAY;
   }
@@ -255,11 +235,7 @@ class RentalService {
   async _updateDelayedRentals(companyId) {
     const now = new Date();
     await prisma.rental.updateMany({
-      where: {
-        companyId,
-        status: 'ACTIVE',
-        endDate: { lt: now },
-      },
+      where: { companyId, status: 'ACTIVE', endDate: { lt: now } },
       data: { status: 'DELAYED' },
     });
   }

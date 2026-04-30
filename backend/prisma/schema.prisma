@@ -83,6 +83,8 @@ model Rental {
   returnDate  DateTime?
   totalDays   Int
   totalAmount Decimal      @db.Decimal(10, 2)
+  discountPercent Float   @default(0)
+  discountAmount  Decimal @db.Decimal(10, 2) @default(0)
   fineAmount  Decimal      @db.Decimal(10, 2) @default(0)
   status      RentalStatus @default(ACTIVE)
   notes       String?
