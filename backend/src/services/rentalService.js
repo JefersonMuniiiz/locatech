@@ -189,8 +189,10 @@ const contractNumber = updatedCompany.lastContractNumber
   async getDashboardStats(companyId) {
     await this._updateDelayedRentals(companyId);
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const brasilOffset = -3 * 60; // UTC-3
+    const brasilNow = new Date(now.getTime() + (brasilOffset - now.getTimezoneOffset()) * 60000);
+    const firstDay = new Date(Date.UTC(brasilNow.getFullYear(), brasilNow.getMonth(), 1));
+    const lastDay = new Date(Date.UTC(brasilNow.getFullYear(), brasilNow.getMonth() + 1, 0, 23, 59, 59));
 
     const [totalEquipments, rentedEquipments, activeRentals, delayedRentals, monthRevenue, recentRentals] =
       await Promise.all([
