@@ -63,7 +63,7 @@ export function generateContractHTML(rental, company) {
   const startDate = new Date(rental.startDate).toLocaleDateString('pt-BR')
   const endDate = new Date(rental.endDate).toLocaleDateString('pt-BR')
   const today = new Date().toLocaleDateString('pt-BR')
-  const contractRef = rental.id.slice(-6).toUpperCase()
+  const contractRef = rental.contractNumber ? String(rental.contractNumber).padStart(4, "0") : rental.id.slice(-6).toUpperCase()
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -221,7 +221,7 @@ export function generateReceiptHTML(rental, company) {
   const fineAmount = Number(payment?.fineAmount) || 0
   const totalAmount = Number(payment?.totalAmount) || 0
   const today = new Date().toLocaleDateString('pt-BR')
-  const contractRef = rental.id.slice(-6).toUpperCase()
+  const contractRef = rental.contractNumber ? String(rental.contractNumber).padStart(4, "0") : rental.id.slice(-6).toUpperCase()
   const PM = { CASH: 'Dinheiro', PIX: 'PIX', CREDIT_CARD: 'Cartão de Crédito', DEBIT_CARD: 'Cartão de Débito', BANK_TRANSFER: 'Transferência', BOLETO: 'Boleto' }
 
   return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><title>Recibo #${contractRef}</title>
