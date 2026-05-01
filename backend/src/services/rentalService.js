@@ -73,11 +73,19 @@ class RentalService {
     const discountAmount = (totalAmount * discountPercent) / 100;
     const finalAmount = totalAmount - discountAmount;
 
+    // Gera número sequencial do contrato
+const updatedCompany = await prisma.company.update({
+  where: { id: companyId },
+  data: { lastContractNumber: { increment: 1 } },
+})
+const contractNumber = updatedCompany.lastContractNumber
+
     const result = await prisma.$transaction(async (tx) => {
       const rental = await tx.rental.create({
         data: {
           clientId,
           companyId,
+          contractNumber,
           startDate: start,
           endDate: end,
           totalDays,
