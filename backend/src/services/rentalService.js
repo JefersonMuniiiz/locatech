@@ -326,7 +326,7 @@ const contractNumber = updatedCompany.lastContractNumber
     return updated
   })
 
-  async delete(id, companyId) {
+  async remove(id, companyId) {
     const rental = await this.findById(id, companyId)
     if (rental.status === 'COMPLETED') throw { status: 400, message: 'Não é possível excluir locação finalizada' }
     if (rental.status === 'CANCELLED') throw { status: 400, message: 'Não é possível excluir locação cancelada' }

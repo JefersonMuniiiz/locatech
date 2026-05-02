@@ -59,7 +59,7 @@ class RentalController {
 
   async destroy(req, res, next) {
     try {
-      await rentalService.delete(req.params.id, req.companyId);
+      await rentalService.remove(req.params.id, req.companyId);
       res.status(204).send();
     } catch (err) { next(err); }
   }
