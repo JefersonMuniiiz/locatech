@@ -11,7 +11,9 @@ export default function NewRentalPage() {
   const qc = useQueryClient()
   const [form, setForm] = useState({ clientId: '', startDate: '', endDate: '', address: '', notes: '' })
   const [items, setItems] = useState([])
-  const [discount, setDiscount] = useState(0)
+  const [discountMode, setDiscountMode] = useState('percent') // 'percent' | 'value'
+  const [discountPercent, setDiscountPercent] = useState(0)
+  const [customValue, setCustomValue] = useState('')
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
   const { data: clients } = useQuery({ queryKey: ['clients'], queryFn: () => api.get('/clients').then(r => r.data) })
@@ -28,8 +30,14 @@ export default function NewRentalPage() {
     return acc + (eq ? parseFloat(eq.dailyRate) * item.quantity * totalDays : 0)
   }, 0)
 
-  const discountAmount = (subtotal * discount) / 100
-  const totalAmount = subtotal - discountAmount
+  // Calcula desconto baseado no modo
+  const finalValue = discountMode === 'value'
+    ? (parseFloat(customValue) || subtotal)
+    : subtotal * (1 - discountPercent / 100)
+
+  const discountAmount = subtotal - finalValue
+  const discountPercentCalc = subtotal > 0 ? (discountAmount / subtotal) * 100 : 0
+  const discount = discountMode === 'value' ? discountPercentCalc : discountPercent
 
   const addItem = () => setItems(p => [...p, { equipmentId: '', quantity: 1 }])
   const removeItem = (i) => setItems(p => p.filter((_, idx) => idx !== i))
@@ -58,6 +66,9 @@ export default function NewRentalPage() {
     if (items.length === 0) return toast.error('Adicione ao menos um equipamento')
     if (items.some(i => !i.equipmentId)) return toast.error('Selecione todos os equipamentos')
     if (totalDays === 0) return toast.error('Datas inválidas')
+    if (discountMode === 'value' && parseFloat(customValue) > subtotal) {
+      return toast.error('Valor final não pode ser maior que o subtotal')
+    }
     create.mutate({ ...form, items, discount })
   }
 
@@ -161,6 +172,7 @@ export default function NewRentalPage() {
             <h2 className="font-semibold">Resumo</h2>
           </div>
 
+          {/* Stats */}
           <div className="grid grid-cols-3 gap-4 text-sm mb-4">
             <div>
               <p className="text-slate-400">Período</p>
@@ -176,32 +188,70 @@ export default function NewRentalPage() {
             </div>
           </div>
 
-          {/* Desconto */}
+          {/* Toggle modo desconto */}
+          <div className="flex rounded-lg overflow-hidden border border-slate-600 mb-3">
+            <button
+              type="button"
+              onClick={() => { setDiscountMode('percent'); setCustomValue('') }}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${discountMode === 'percent' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+            >
+              Desconto em %
+            </button>
+            <button
+              type="button"
+              onClick={() => { setDiscountMode('value'); setDiscountPercent(0) }}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${discountMode === 'value' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+            >
+              Definir valor final
+            </button>
+          </div>
+
+          {/* Input de desconto */}
           <div className="flex items-center gap-3 p-3 bg-slate-700 rounded-lg mb-4">
             <Tag size={16} className="text-green-400 shrink-0" />
-            <label className="text-slate-300 text-sm whitespace-nowrap">Desconto (%):</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="0.5"
-              value={discount || ''}
-              onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
-              onFocus={e => e.target.select()}
-              className="w-24 px-3 py-1.5 rounded-lg bg-slate-600 text-white text-sm border border-slate-500 focus:outline-none focus:border-blue-400"
-            />
-            {discount > 0 && (
-              <div className="flex-1 text-right">
-                <p className="text-green-400 text-sm font-medium">- {formatCurrency(discountAmount)}</p>
-                <p className="text-slate-400 text-xs">{discount}% de desconto</p>
-              </div>
+            {discountMode === 'percent' ? (
+              <>
+                <label className="text-slate-300 text-sm whitespace-nowrap">Desconto (%):</label>
+                <input
+                  type="number" min="0" max="100" step="0.5"
+                  value={discountPercent || ''}
+                  onChange={e => setDiscountPercent(parseFloat(e.target.value) || 0)}
+                  onFocus={e => e.target.select()}
+                  placeholder="0"
+                  className="w-24 px-3 py-1.5 rounded-lg bg-slate-600 text-white text-sm border border-slate-500 focus:outline-none focus:border-blue-400"
+                />
+                {discountPercent > 0 && (
+                  <div className="flex-1 text-right">
+                    <p className="text-green-400 text-sm font-medium">- {formatCurrency(subtotal * discountPercent / 100)}</p>
+                    <p className="text-slate-400 text-xs">{discountPercent}% de desconto</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <label className="text-slate-300 text-sm whitespace-nowrap">Valor final (R$):</label>
+                <input
+                  type="number" min="0" step="0.01"
+                  value={customValue}
+                  onChange={e => setCustomValue(e.target.value)}
+                  onFocus={e => e.target.select()}
+                  placeholder={subtotal.toFixed(2)}
+                  className="w-36 px-3 py-1.5 rounded-lg bg-slate-600 text-white text-sm border border-slate-500 focus:outline-none focus:border-blue-400"
+                />
+                {customValue && parseFloat(customValue) < subtotal && (
+                  <div className="flex-1 text-right">
+                    <p className="text-green-400 text-sm font-medium">- {formatCurrency(discountAmount)}</p>
+                    <p className="text-slate-400 text-xs">{discountPercentCalc.toFixed(1)}% de desconto</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           {/* Total final */}
           <div className="flex items-center justify-between p-3 bg-blue-600 rounded-lg mb-4">
             <span className="font-semibold">Total Final</span>
-            <span className="font-bold text-xl">{formatCurrency(totalAmount)}</span>
+            <span className="font-bold text-xl">{formatCurrency(finalValue)}</span>
           </div>
 
           <button type="submit" className="btn-primary w-full justify-center py-3 bg-blue-500 hover:bg-blue-400" disabled={create.isPending}>
