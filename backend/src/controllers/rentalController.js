@@ -49,6 +49,21 @@ class RentalController {
       res.json(data);
     } catch (error) { next(error); }
   }
+async update(req, res, next) {
+  try {
+    const data = await rentalService.update(req.params.id, req.companyId, req.body)
+    res.json(data)
+  } catch (err) { next(err) }
 }
+
+async destroy(req, res, next) {
+  try {
+    await rentalService.delete(req.params.id, req.companyId)
+    res.status(204).send()
+  } catch (err) { next(err) }
+}
+
+}
+
 
 module.exports = new RentalController();

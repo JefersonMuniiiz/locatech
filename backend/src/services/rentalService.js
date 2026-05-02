@@ -249,6 +249,100 @@ const contractNumber = updatedCompany.lastContractNumber
       data: { status: 'DELAYED' },
     });
   }
+
+  async update(id, companyId, { clientId, startDate, endDate, address, notes, discount, items }) {
+  const rental = await this.findById(id, companyId)
+  if (rental.status === 'COMPLETED') throw { status: 400, message: 'Não é possível editar locação finalizada' }
+  if (rental.status === 'CANCELLED') throw { status: 400, message: 'Não é possível editar locação cancelada' }
+
+  const start = new Date(startDate + 'T12:00:00')
+  const end = new Date(endDate + 'T12:00:00')
+  const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24))
+  if (totalDays <= 0) throw { status: 400, message: 'Data de fim deve ser após a data de início' }
+
+  const client = await prisma.client.findFirst({ where: { id: clientId, companyId } })
+  if (!client) throw { status: 404, message: 'Cliente não encontrado' }
+
+  // Recalcula itens
+  let totalAmount = 0
+  const processedItems = []
+  for (const item of items) {
+    const equipment = await prisma.equipment.findFirst({ where: { id: item.equipmentId, companyId } })
+    if (!equipment) throw { status: 404, message: 'Equipamento não encontrado' }
+    const itemTotal = item.quantity * equipment.dailyRate * totalDays
+    totalAmount += itemTotal
+    processedItems.push({
+      equipmentId: item.equipmentId,
+      quantity: item.quantity,
+      dailyRate: equipment.dailyRate,
+      totalAmount: itemTotal,
+    })
+  }
+
+  const discountPercent = parseFloat(discount) || 0
+  const discountAmount = (totalAmount * discountPercent) / 100
+  const finalAmount = totalAmount - discountAmount
+
+  return prisma.$transaction(async (tx) => {
+    // Restaura disponibilidade dos itens antigos
+    for (const item of rental.items) {
+      await equipmentService.updateAvailability(item.equipmentId, item.quantity, tx)
+    }
+
+    // Remove itens antigos
+    await tx.rentalItem.deleteMany({ where: { rentalId: id } })
+
+    // Atualiza locação
+    const updated = await tx.rental.update({
+      where: { id },
+      data: {
+        clientId,
+        startDate: start,
+        endDate: end,
+        totalDays,
+        totalAmount: finalAmount,
+        discountPercent,
+        discountAmount,
+        address,
+        notes,
+        items: { create: processedItems },
+      },
+      include: { client: true, items: { include: { equipment: true } }, payment: true },
+    })
+
+    // Atualiza pagamento
+    if (rental.payment) {
+      await tx.payment.update({
+        where: { id: rental.payment.id },
+        data: { amount: finalAmount, totalAmount: finalAmount },
+      })
+    }
+
+    // Deduz disponibilidade dos novos itens
+    for (const item of processedItems) {
+      await equipmentService.updateAvailability(item.equipmentId, -item.quantity, tx)
+    }
+
+    return updated
+  })
+}
+
+async delete(id, companyId) {
+  const rental = await this.findById(id, companyId)
+  if (rental.status === 'COMPLETED') throw { status: 400, message: 'Não é possível excluir locação finalizada' }
+  if (rental.status === 'CANCELLED') throw { status: 400, message: 'Não é possível excluir locação cancelada' }
+
+  return prisma.$transaction(async (tx) => {
+    // Restaura disponibilidade
+    for (const item of rental.items) {
+      await equipmentService.updateAvailability(item.equipmentId, item.quantity, tx)
+    }
+    await tx.payment.deleteMany({ where: { rentalId: id } })
+    await tx.rentalItem.deleteMany({ where: { rentalId: id } })
+    await tx.rental.delete({ where: { id } })
+    return { deleted: true }
+  })
+}
 }
 
 module.exports = new RentalService();

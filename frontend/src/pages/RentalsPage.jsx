@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import Table from '../components/ui/Table'
 import Badge from '../components/ui/Badge'
 import Modal from '../components/ui/Modal'
-import { Plus, Search, Eye, CheckCircle, CreditCard, Loader2, FileText as FilePdf } from 'lucide-react'
+import { Plus, Search, Eye, CheckCircle, CreditCard, Loader2, FileText as FilePdf, Pencil, Trash2 } from 'lucide-react'
 import { formatCurrency, formatDate, RENTAL_STATUS, PAYMENT_STATUS, PAYMENT_METHODS } from '../utils'
 import { generateContractHTML, generateReceiptHTML, openPrintWindow } from '../utils/pdfGenerator'
 import { useAuth } from '../context/AuthContext'
@@ -15,6 +15,7 @@ import DamageFinesModal from '../components/ui/DamageFinesModal'
 
 export default function RentalsPage() {
   const { company } = useAuth()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [searchParams] = useSearchParams()
   const [search, setSearch] = useState('')
@@ -42,6 +43,12 @@ export default function RentalsPage() {
     onError: err => toast.error(err.response?.data?.error || 'Erro ao atualizar pagamento'),
   })
 
+  const deleteRental = useMutation({
+  mutationFn: id => api.delete(`/rentals/${id}`),
+  onSuccess: () => { toast.success('Locação excluída!'); qc.invalidateQueries(['rentals']); qc.invalidateQueries(['dashboard']); qc.invalidateQueries(['equipments']) },
+  onError: err => toast.error(err.response?.data?.error || 'Erro ao excluir'),
+})
+
   const columns = [
     {
       header: 'Cliente',
@@ -59,6 +66,16 @@ export default function RentalsPage() {
       header: '', className: 'w-28',
       render: r => (
         <div className="flex gap-1">
+          {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
+            <button onClick={() => navigate(`/rentals/${r.id}/edit`)} className="p-1.5 hover:bg-blue-50 rounded-lg" title="Editar">
+              <Pencil size={14} className="text-blue-600" />
+            </button>
+          )}
+          {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
+            <button onClick={() => { if (confirm('Excluir esta locação?')) deleteRental.mutate(r.id) }} className="p-1.5 hover:bg-red-50 rounded-lg" title="Excluir">
+              <Trash2 size={14} className="text-red-500" />
+            </button>
+)}
           <button onClick={() => setDetailModal(r)} className="p-1.5 hover:bg-slate-100 rounded-lg" title="Detalhes">
             <Eye size={14} className="text-slate-500" />
           </button>

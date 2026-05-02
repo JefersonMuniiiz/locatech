@@ -8,6 +8,7 @@ import EquipmentsPage from './pages/EquipmentsPage'
 import ClientsPage from './pages/ClientsPage'
 import RentalsPage from './pages/RentalsPage'
 import NewRentalPage from './pages/NewRentalPage'
+import EditRentalPage from './pages/EditRentalPage'
 import FinancialPage from './pages/FinancialPage'
 import DeliveriesPage from './pages/DeliveriesPage'
 import ReportPage from './pages/ReportPage'
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="clients" element={<ClientsPage />} />
             <Route path="rentals" element={<RentalsPage />} />
             <Route path="rentals/new" element={<NewRentalPage />} />
+            <Route path="rentals/:id/edit" element={<EditRentalPage />} />
             <Route path="financial" element={<FinancialPage />} />
             <Route path="deliveries" element={<DeliveriesPage />} />
             <Route path="reports" element={<ReportPage />} />

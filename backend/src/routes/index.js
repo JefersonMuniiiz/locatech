@@ -46,6 +46,8 @@ router.get('/rentals/deliveries/today', authenticate, (req, res, next) => rental
 router.get('/rentals/:id', authenticate, (req, res, next) => rentalController.show(req, res, next));
 router.post('/rentals', authenticate, (req, res, next) => rentalController.create(req, res, next));
 router.patch('/rentals/:id/complete', authenticate, (req, res, next) => rentalController.complete(req, res, next));
+router.put('/rentals/:id', authenticate, (req, res, next) => rentalController.update(req, res, next))
+router.delete('/rentals/:id', authenticate, (req, res, next) => rentalController.destroy(req, res, next))
 router.patch('/rentals/:id/payment', authenticate, (req, res, next) => rentalController.updatePayment(req, res, next));
 
 // User routes (admin only)
