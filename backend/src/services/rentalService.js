@@ -325,24 +325,21 @@ const contractNumber = updatedCompany.lastContractNumber
 
     return updated
   })
-}
 
-async delete(id, companyId) {
-  const rental = await this.findById(id, companyId)
-  if (rental.status === 'COMPLETED') throw { status: 400, message: 'Não é possível excluir locação finalizada' }
-  if (rental.status === 'CANCELLED') throw { status: 400, message: 'Não é possível excluir locação cancelada' }
-
-  return prisma.$transaction(async (tx) => {
-    // Restaura disponibilidade
-    for (const item of rental.items) {
-      await equipmentService.updateAvailability(item.equipmentId, item.quantity, tx)
-    }
-    await tx.payment.deleteMany({ where: { rentalId: id } })
-    await tx.rentalItem.deleteMany({ where: { rentalId: id } })
-    await tx.rental.delete({ where: { id } })
-    return { deleted: true }
-  })
-}
+  async delete(id, companyId) {
+    const rental = await this.findById(id, companyId)
+    if (rental.status === 'COMPLETED') throw { status: 400, message: 'Não é possível excluir locação finalizada' }
+    if (rental.status === 'CANCELLED') throw { status: 400, message: 'Não é possível excluir locação cancelada' }
+    return prisma.$transaction(async (tx) => {
+      for (const item of rental.items) {
+        await equipmentService.updateAvailability(item.equipmentId, item.quantity, tx)
+      }
+      await tx.payment.deleteMany({ where: { rentalId: id } })
+      await tx.rentalItem.deleteMany({ where: { rentalId: id } })
+      await tx.rental.delete({ where: { id } })
+      return { deleted: true }
+    })
+  }
 }
 
 module.exports = new RentalService();
