@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import Table from '../components/ui/Table'
@@ -44,57 +44,66 @@ export default function RentalsPage() {
   })
 
   const deleteRental = useMutation({
-  mutationFn: id => api.delete(`/rentals/${id}`),
-  onSuccess: () => { toast.success('Locação excluída!'); qc.invalidateQueries(['rentals']); qc.invalidateQueries(['dashboard']); qc.invalidateQueries(['equipments']) },
-  onError: err => toast.error(err.response?.data?.error || 'Erro ao excluir'),
-})
+    mutationFn: id => api.delete(`/rentals/${id}`),
+    onSuccess: () => { toast.success('Locação excluída!'); qc.invalidateQueries(['rentals']); qc.invalidateQueries(['dashboard']); qc.invalidateQueries(['equipments']) },
+    onError: err => toast.error(err.response?.data?.error || 'Erro ao excluir'),
+  })
 
   const columns = [
     {
       header: 'Cliente',
-      render: r => <div><p className="font-medium text-slate-800">{r.client?.name}</p><p className="text-xs text-slate-400">{r.items?.length} item(s)</p></div>
+      render: r => (
+        <div>
+          <p className="font-medium text-slate-800">{r.client?.name}</p>
+          <p className="text-xs text-slate-400">{r.items?.length} item(s)</p>
+        </div>
+      )
     },
     { header: 'Início', render: r => formatDate(r.startDate) },
     { header: 'Fim Previsto', render: r => formatDate(r.endDate) },
     { header: 'Total', render: r => <span className="font-semibold">{formatCurrency(r.totalAmount)}</span> },
     { header: 'Status', render: r => <Badge {...RENTAL_STATUS[r.status]} /> },
+    { header: 'Pagamento', render: r => r.payment ? <Badge {...PAYMENT_STATUS[r.payment.status]} /> : '—' },
     {
-      header: 'Pagamento',
-      render: r => r.payment ? <Badge {...PAYMENT_STATUS[r.payment.status]} /> : '—'
-    },
-    {
-      header: '', className: 'w-28',
+      header: 'Ações', className: 'w-52',
       render: r => (
-        <div className="flex gap-1">
-          {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
-            <button onClick={() => navigate(`/rentals/${r.id}/edit`)} className="p-1.5 hover:bg-blue-50 rounded-lg" title="Editar">
-              <Pencil size={14} className="text-blue-600" />
-            </button>
-          )}
-          {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
-            <button onClick={() => { if (confirm('Excluir esta locação?')) deleteRental.mutate(r.id) }} className="p-1.5 hover:bg-red-50 rounded-lg" title="Excluir">
-              <Trash2 size={14} className="text-red-500" />
-            </button>
-)}
+        <div className="flex gap-1 flex-wrap">
           <button onClick={() => setDetailModal(r)} className="p-1.5 hover:bg-slate-100 rounded-lg" title="Detalhes">
             <Eye size={14} className="text-slate-500" />
           </button>
+
+          {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
+            <button onClick={() => navigate(`/rentals/${r.id}/edit`)} className="p-1.5 hover:bg-blue-50 rounded-lg" title="Editar locação">
+              <Pencil size={14} className="text-blue-600" />
+            </button>
+          )}
+
           {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
             <button onClick={() => { if (confirm('Finalizar esta locação?')) complete.mutate(r.id) }} className="p-1.5 hover:bg-green-50 rounded-lg" title="Finalizar">
               <CheckCircle size={14} className="text-green-600" />
             </button>
           )}
+
+          {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
+            <button onClick={() => { if (confirm('Excluir esta locação? Esta ação não pode ser desfeita.')) deleteRental.mutate(r.id) }} className="p-1.5 hover:bg-red-50 rounded-lg" title="Excluir">
+              <Trash2 size={14} className="text-red-500" />
+            </button>
+          )}
+
           {r.payment && r.payment.status !== 'PAID' && (
             <button onClick={() => { setPaymentModal(r); setPayForm({ status: 'PAID', method: 'PIX', notes: '' }) }} className="p-1.5 hover:bg-blue-50 rounded-lg" title="Registrar pagamento">
               <CreditCard size={14} className="text-blue-600" />
             </button>
           )}
+
           <button onClick={() => openPrintWindow(generateContractHTML(r, company))} className="p-1.5 hover:bg-slate-100 rounded-lg" title="Gerar Contrato PDF">
             <FilePdf size={14} className="text-slate-500" />
           </button>
+
           <button onClick={() => setBillingModal(r)} className="p-1.5 hover:bg-green-50 rounded-lg" title="Gerar Boleto/PIX">
-            <CreditCard size={14} className="text-green-600" />
+            <span className="text-green-600 text-xs font-bold">PIX</span>
           </button>
+
           <button onClick={() => setDamageModal(r)} className="p-1.5 hover:bg-orange-50 rounded-lg" title="Multas por Danos">
             <span className="text-orange-500 text-xs font-bold">R$</span>
           </button>
@@ -141,7 +150,6 @@ export default function RentalsPage() {
               <div><span className="text-slate-500">Dias:</span> {detailModal.totalDays}</div>
               <div><span className="text-slate-500">Endereço:</span> {detailModal.address}</div>
             </div>
-
             <div>
               <p className="text-sm font-semibold text-slate-700 mb-2">Itens</p>
               <div className="border border-slate-200 rounded-lg overflow-hidden">
@@ -163,7 +171,6 @@ export default function RentalsPage() {
                 </div>
               </div>
             </div>
-
             {detailModal.payment && (
               <div className="p-3 bg-slate-50 rounded-lg text-sm">
                 <span className="text-slate-500">Pagamento: </span>
@@ -171,7 +178,6 @@ export default function RentalsPage() {
                 {detailModal.payment.paidAt && <span className="text-slate-500 ml-2">em {formatDate(detailModal.payment.paidAt)}</span>}
               </div>
             )}
-
             {detailModal.notes && (
               <div className="p-3 bg-slate-50 rounded-lg text-sm text-slate-600">
                 <strong>Obs:</strong> {detailModal.notes}
@@ -217,11 +223,8 @@ export default function RentalsPage() {
             </div>
             <div className="flex gap-3">
               <button className="btn-secondary flex-1 justify-center" onClick={() => setPaymentModal(null)}>Cancelar</button>
-              <button
-                className="btn-primary flex-1 justify-center"
-                disabled={updatePayment.isPending}
-                onClick={() => updatePayment.mutate({ id: paymentModal.id, ...payForm })}
-              >
+              <button className="btn-primary flex-1 justify-center" disabled={updatePayment.isPending}
+                onClick={() => updatePayment.mutate({ id: paymentModal.id, ...payForm })}>
                 {updatePayment.isPending ? <Loader2 size={16} className="animate-spin" /> : 'Confirmar'}
               </button>
             </div>
@@ -229,17 +232,8 @@ export default function RentalsPage() {
         )}
       </Modal>
 
-      <BillingModal
-        open={!!billingModal}
-        onClose={() => setBillingModal(null)}
-        rental={billingModal}
-      />
-
-      <DamageFinesModal
-        open={!!damageModal}
-        onClose={() => setDamageModal(null)}
-        rental={damageModal}
-      />
+      <BillingModal open={!!billingModal} onClose={() => setBillingModal(null)} rental={billingModal} />
+      <DamageFinesModal open={!!damageModal} onClose={() => setDamageModal(null)} rental={damageModal} />
     </div>
   )
 }
