@@ -133,6 +133,16 @@ export function generateContractHTML(rental, company) {
             <td>${Number(item.totalAmount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
           </tr>`).join('')}
         ${fineAmount > 0 ? `<tr><td colspan="4" style="color:#dc2626">Multa por atraso</td><td style="color:#dc2626">${fineAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>` : ''}
+        ${Number(rental.discountAmount) > 0 ? `
+          <tr style="color:#16a34a">
+            <td colspan="4">Desconto concedido (${Number(rental.discountPercent).toFixed(1)}%)</td>
+            <td>- ${Number(rental.discountAmount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+          </tr>
+          <tr style="color:#6b7280;font-size:11px">
+            <td colspan="4">Valor original sem desconto</td>
+            <td>${(totalAmount + Number(rental.discountAmount)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+          </tr>
+        ` : ''}
         <tr class="total-row"><td colspan="4">TOTAL</td><td>${grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>
       </tbody>
     </table>
