@@ -73,20 +73,8 @@ export default function RentalsPage() {
           </button>
 
           {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
-            <button onClick={() => navigate(`/rentals/${r.id}/edit`)} className="p-1.5 hover:bg-blue-50 rounded-lg" title="Editar locação">
-              <Pencil size={14} className="text-blue-600" />
-            </button>
-          )}
-
-          {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
             <button onClick={() => { if (confirm('Finalizar esta locação?')) complete.mutate(r.id) }} className="p-1.5 hover:bg-green-50 rounded-lg" title="Finalizar">
               <CheckCircle size={14} className="text-green-600" />
-            </button>
-          )}
-
-          {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
-            <button onClick={() => { if (confirm('Excluir esta locação? Esta ação não pode ser desfeita.')) deleteRental.mutate(r.id) }} className="p-1.5 hover:bg-red-50 rounded-lg" title="Excluir">
-              <Trash2 size={14} className="text-red-500" />
             </button>
           )}
 
@@ -107,6 +95,18 @@ export default function RentalsPage() {
           <button onClick={() => setDamageModal(r)} className="p-1.5 hover:bg-orange-50 rounded-lg" title="Multas por Danos">
             <span className="text-orange-500 text-xs font-bold">R$</span>
           </button>
+
+          {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
+            <button onClick={() => navigate(`/rentals/${r.id}/edit`)} className="p-1.5 hover:bg-blue-50 rounded-lg" title="Editar locação">
+              <Pencil size={14} className="text-blue-600" />
+            </button>
+          )}
+
+          {(r.status === 'ACTIVE' || r.status === 'DELAYED') && (
+            <button onClick={() => { if (confirm('Excluir esta locação? Esta ação não pode ser desfeita.')) deleteRental.mutate(r.id) }} className="p-1.5 hover:bg-red-50 rounded-lg" title="Excluir">
+              <Trash2 size={14} className="text-red-500" />
+            </button>
+          )}
         </div>
       )
     },
