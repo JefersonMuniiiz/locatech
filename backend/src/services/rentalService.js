@@ -325,7 +325,7 @@ const contractNumber = updatedCompany.lastContractNumber
 
     return updated
   })
-
+  }
   async remove(id, companyId) {
     const rental = await this.findById(id, companyId)
     if (rental.status === 'COMPLETED') throw { status: 400, message: 'Não é possível excluir locação finalizada' }
@@ -341,5 +341,6 @@ const contractNumber = updatedCompany.lastContractNumber
     })
   }
 }
+
 
 module.exports = new RentalService();
