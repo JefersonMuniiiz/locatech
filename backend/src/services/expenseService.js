@@ -101,9 +101,8 @@ class ExpenseService {
     // Receitas pendentes do período
     const pendingPayments = await prisma.payment.aggregate({
       where: {
-        rental: { companyId },
+        rental: { companyId, startDate: { gte: start, lte: end } },
         status: { in: ['PENDING', 'OVERDUE'] },
-        rental: { startDate: { gte: start, lte: end } },
       },
       _sum: { totalAmount: true },
     })
