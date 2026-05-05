@@ -195,6 +195,12 @@ class ExpenseService {
       chartData,
       recentExpenses: expenses.slice(0, 10),
       recentPayments: payments.slice(0, 10),
+      anoSummary: {
+        totalReceitas: totalAnoReceitas,
+        totalDespesas: totalAnoDespesas,
+        totalPendente: totalAnoPendente,
+        saldo: saldoAno,
+      },
     }
   }
 }
