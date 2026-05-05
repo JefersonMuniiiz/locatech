@@ -16,6 +16,7 @@ import ReportPage from './pages/ReportPage'
 import AlertsPage from './pages/AlertsPage'
 import UsersPage from './pages/UsersPage'
 import WhatsAppPage from './pages/WhatsAppPage'
+import CashFlowPage from './pages/CashFlowPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="alerts" element={<AlertsPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="whatsapp" element={<WhatsAppPage />} />
+            <Route path="cashflow" element={<CashFlowPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

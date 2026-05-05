@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useQuery } from '@tanstack/react-query'
 import api from '../../services/api'
 import {
-  LayoutDashboard, Package, Users, FileText, DollarSign,
+  LayoutDashboard, Package, Users, FileText, DollarSign, TrendingUp,
   Truck, LogOut, Building2, Menu, Bell, BarChart2, UserCog, MessageCircle
 } from 'lucide-react'
 import { useState } from 'react'
@@ -33,6 +33,8 @@ export default function Layout() {
     { to: '/reports',    icon: BarChart2,       label: 'Relatórios' },
     { to: '/alerts',     icon: Bell,            label: 'Alertas', badge: alertCount },
     { to: '/whatsapp',   icon: MessageCircle,   label: 'WhatsApp' },
+    { to: '/cashflow',  icon: TrendingUp,     label: 'Fluxo de Caixa' },
+    { to: '/cashflow', icon: TrendingUp, label: 'Fluxo de Caixa' },
     ...(user?.role === 'ADMIN' ? [{ to: '/users', icon: UserCog, label: 'Usuários' }] : []),
   ]
 

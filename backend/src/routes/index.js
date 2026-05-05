@@ -8,7 +8,8 @@ const clientController = require('../controllers/clientController');
 const rentalController = require('../controllers/rentalController');
 const userController = require('../controllers/userController')
 const notificationController = require('../controllers/notificationController')
-const billingController = require('../controllers/billingController');
+const billingController = require('../controllers/billingController')
+const expenseController = require('../controllers/expenseController');
 
 // Auth routes
 router.post('/auth/register', (req, res, next) => authController.register(req, res, next));
@@ -66,6 +67,13 @@ router.post('/billing/webhook', (req, res, next) => billingController.webhook(re
 router.get('/rentals/:rentalId/damages', authenticate, (req, res, next) => billingController.getDamageFines(req, res, next))
 router.post('/rentals/:rentalId/damages', authenticate, (req, res, next) => billingController.addDamageFine(req, res, next))
 router.delete('/rentals/:rentalId/damages/:fineId', authenticate, (req, res, next) => billingController.removeDamageFine(req, res, next))
+
+// Expense routes
+router.get('/cashflow', authenticate, (req, res, next) => expenseController.cashflow(req, res, next))
+router.get('/expenses', authenticate, (req, res, next) => expenseController.index(req, res, next))
+router.post('/expenses', authenticate, (req, res, next) => expenseController.create(req, res, next))
+router.put('/expenses/:id', authenticate, (req, res, next) => expenseController.update(req, res, next))
+router.delete('/expenses/:id', authenticate, (req, res, next) => expenseController.destroy(req, res, next))
 
 // Notification / WhatsApp routes
 router.get('/notifications/status', authenticate, (req, res, next) => notificationController.status(req, res, next))
