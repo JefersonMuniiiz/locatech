@@ -34,7 +34,6 @@ export default function Layout() {
     { to: '/alerts',     icon: Bell,            label: 'Alertas', badge: alertCount },
     { to: '/whatsapp',   icon: MessageCircle,   label: 'WhatsApp' },
     { to: '/cashflow',  icon: TrendingUp,     label: 'Fluxo de Caixa' },
-    { to: '/cashflow', icon: TrendingUp, label: 'Fluxo de Caixa' },
     ...(user?.role === 'ADMIN' ? [{ to: '/users', icon: UserCog, label: 'Usuários' }] : []),
   ]
 
