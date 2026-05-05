@@ -159,7 +159,7 @@ export default function ReportPage() {
   const reportData = (() => {
     if (!rentals) return null
     const start = startOfMonth(new Date(month + '-01'))
-    const end = endOfMonth(new Date(month + '-01'))
+    const end = new Date(new Date(month + '-01').getFullYear(), new Date(month + '-01').getMonth() + 1, 0, 23, 59, 59)
 
     const filtered = rentals.filter(r => {
       const d = r.payment?.paidAt ? new Date(r.payment.paidAt) : new Date(r.startDate)
