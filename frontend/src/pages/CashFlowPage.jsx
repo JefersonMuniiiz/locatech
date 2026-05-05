@@ -111,7 +111,7 @@ export default function CashFlowPage() {
             <div className="p-2 bg-green-50 rounded-lg"><TrendingUp size={20} className="text-green-600" /></div>
             <div>
               <p className="text-xs text-slate-500">Receitas Recebidas</p>
-              <p className="text-xl font-bold text-green-600">{isLoading ? '—' : formatCurrency(data?.totalReceitas)}</p>
+              <p className="text-xl font-bold text-green-600">{isLoading ? '—' : formatCurrency(data?.anoSummary?.totalReceitas)}</p>
               {data?.pctReceitas && (
                 <p className={`text-xs ${Number(data.pctReceitas) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {Number(data.pctReceitas) >= 0 ? '↑' : '↓'} {Math.abs(data.pctReceitas)}% vs mês anterior
@@ -126,7 +126,7 @@ export default function CashFlowPage() {
             <div className="p-2 bg-red-50 rounded-lg"><TrendingDown size={20} className="text-red-600" /></div>
             <div>
               <p className="text-xs text-slate-500">Despesas Pagas</p>
-              <p className="text-xl font-bold text-red-600">{isLoading ? '—' : formatCurrency(data?.totalDespesas)}</p>
+              <p className="text-xl font-bold text-red-600">{isLoading ? '—' : formatCurrency(data?.anoSummary?.totalDespesas)}</p>
               {data?.pctDespesas && (
                 <p className={`text-xs ${Number(data.pctDespesas) <= 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {Number(data.pctDespesas) >= 0 ? '↑' : '↓'} {Math.abs(data.pctDespesas)}% vs mês anterior
@@ -144,7 +144,7 @@ export default function CashFlowPage() {
             <div>
               <p className="text-xs text-slate-500">Saldo do Período</p>
               <p className={`text-xl font-bold ${(data?.saldo || 0) >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-                {isLoading ? '—' : formatCurrency(data?.saldo)}
+                {isLoading ? '—' : formatCurrency(data?.anoSummary?.saldo)}
               </p>
               <p className="text-xs text-slate-400">Receitas − Despesas</p>
             </div>
@@ -156,7 +156,7 @@ export default function CashFlowPage() {
             <div className="p-2 bg-yellow-50 rounded-lg"><Clock size={20} className="text-yellow-600" /></div>
             <div>
               <p className="text-xs text-slate-500">A Receber</p>
-              <p className="text-xl font-bold text-yellow-600">{isLoading ? '—' : formatCurrency(data?.totalPendente)}</p>
+              <p className="text-xl font-bold text-yellow-600">{isLoading ? '—' : formatCurrency(data?.anoSummary?.totalPendente)}</p>
               <p className="text-xs text-slate-400">Pagamentos pendentes</p>
             </div>
           </div>
@@ -242,19 +242,19 @@ export default function CashFlowPage() {
             <div className="grid grid-cols-4 gap-4 text-center">
               <div className="p-4 bg-green-50 rounded-lg">
                 <p className="text-xs text-slate-500 mb-1">Total Receitas</p>
-                <p className="text-lg font-bold text-green-600">{formatCurrency(data?.totalReceitas)}</p>
+                <p className="text-lg font-bold text-green-600">{formatCurrency(data?.anoSummary?.totalReceitas)}</p>
               </div>
               <div className="p-4 bg-red-50 rounded-lg">
                 <p className="text-xs text-slate-500 mb-1">Total Despesas</p>
-                <p className="text-lg font-bold text-red-600">{formatCurrency(data?.totalDespesas)}</p>
+                <p className="text-lg font-bold text-red-600">{formatCurrency(data?.anoSummary?.totalDespesas)}</p>
               </div>
               <div className="p-4 bg-yellow-50 rounded-lg">
                 <p className="text-xs text-slate-500 mb-1">A Receber</p>
-                <p className="text-lg font-bold text-yellow-600">{formatCurrency(data?.totalPendente)}</p>
+                <p className="text-lg font-bold text-yellow-600">{formatCurrency(data?.anoSummary?.totalPendente)}</p>
               </div>
               <div className={`p-4 rounded-lg ${(data?.saldo || 0) >= 0 ? 'bg-blue-50' : 'bg-orange-50'}`}>
                 <p className="text-xs text-slate-500 mb-1">Saldo</p>
-                <p className={`text-lg font-bold ${(data?.saldo || 0) >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{formatCurrency(data?.saldo)}</p>
+                <p className={`text-lg font-bold ${(data?.saldo || 0) >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{formatCurrency(data?.anoSummary?.saldo)}</p>
               </div>
             </div>
           </div>

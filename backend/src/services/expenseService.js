@@ -169,6 +169,19 @@ class ExpenseService {
     const pctReceitas = prevReceitas > 0 ? ((totalReceitas - prevReceitas) / prevReceitas * 100).toFixed(1) : null
     const pctDespesas = prevDespesas > 0 ? ((totalDespesas - prevDespesas) / prevDespesas * 100).toFixed(1) : null
 
+    // Totais do ano completo
+    const anoStart = new Date(Date.UTC(brasilNow.getFullYear(), 0, 1))
+    const anoEnd = new Date(Date.UTC(brasilNow.getFullYear(), 11, 31, 23, 59, 59))
+    const [anoReceitas, anoDespesas, anoPendente] = await Promise.all([
+      prisma.payment.aggregate({ where: { rental: { companyId }, status: 'PAID', paidAt: { gte: anoStart, lte: anoEnd } }, _sum: { totalAmount: true } }),
+      prisma.expense.aggregate({ where: { companyId, paidAt: { gte: anoStart, lte: anoEnd } }, _sum: { amount: true } }),
+      prisma.payment.aggregate({ where: { rental: { companyId }, status: { in: ['PENDING', 'OVERDUE'] } }, _sum: { totalAmount: true } }),
+    ])
+    const totalAnoReceitas = Number(anoReceitas._sum.totalAmount) || 0
+    const totalAnoDespesas = Number(anoDespesas._sum.amount) || 0
+    const totalAnoPendente = Number(anoPendente._sum.totalAmount) || 0
+    const saldoAno = totalAnoReceitas - totalAnoDespesas
+
     return {
       period: { start: start.toISOString(), end: end.toISOString() },
       totalReceitas,
